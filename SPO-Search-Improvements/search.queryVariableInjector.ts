@@ -4,7 +4,7 @@
 
 /*
 
-Author: Mikael Svenson - Puzzlepart 2016 & Elio Struyf
+Authors: Mikael Svenson - Elio Struyf
 Twitter: @mikaelsvenson - @eliostruyf
 
 Description
