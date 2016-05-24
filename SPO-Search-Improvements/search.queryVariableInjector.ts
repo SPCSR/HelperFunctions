@@ -38,6 +38,7 @@ const GetUserProfileProperties = false;
 const ShowSynonyms = true;
 const RemoveNoiseWords = true;
 const SynonymsList = 'Synonyms';
+const RunOnWebParts = []; //Empty array runs on all web parts, if not add the name of the query group
 /****************************************************************************
  * End of the properties to configure                                       *
  ****************************************************************************/
@@ -62,12 +63,12 @@ module spcsr.Search.VariableInjection {
     var _origExecuteQueries = Microsoft.SharePoint.Client.Search.Query.SearchExecutor.prototype.executeQueries;
     var _getHighlightedProperty = Srch.U.getHighlightedProperty;
     var _siteUrl: string = _spPageContextInfo.webAbsoluteUrl;
-    
+
     const PROP_SYNONYMQUERY = "SynonymQuery";
     const PROP_SYNONYM = "Synonyms";
     const HIGHLIGHTED_PROPERTIES = 'HitHighlightedProperties';
     const HIGHLIGHTED_SUMMARY = 'HitHighlightedSummary';
-    
+
     const NOISE_WORDS = "about,after,all,also,an,another,any,are,as,at,be,because,been,before,being,between,both,but,by,came,can,come,could,did,do,each,for,from,get,got,has,had,he,have,her,here,him,himself,his,how,if,in,into,is,it,like,make,many,me,might,more,most,much,must,my,never,now,of,on,only,other,our,out,over,said,same,see,should,since,some,still,such,take,than,that,the,their,them,then,there,these,they,this,those,through,to,too,under,up,very,was,way,we,well,were,what,where,which,while,who,with,would,you,your,a".split(',');
 
     // Load user poperties and synonyms
@@ -78,11 +79,11 @@ module spcsr.Search.VariableInjection {
             Q.all([loadSynonyms(), loadUserVariables()]).done(() => {
                 // set loaded data as custom query variables
                 injectCustomQueryVariables();
-                                
+
                 // reset to original function
                 Microsoft.SharePoint.Client.Search.Query.SearchExecutor.prototype.executeQuery = _origExecuteQuery;
                 Microsoft.SharePoint.Client.Search.Query.SearchExecutor.prototype.executeQueries = _origExecuteQueries;
-                
+
                 // re-issue query for the search web parts
                 for (var i = 0; i < _dataProviders.length; i++) {
                     // complete the intercepted event
@@ -104,7 +105,7 @@ module spcsr.Search.VariableInjection {
         }
         var urlSynonymsList: string = _siteUrl + "/_api/Web/Lists/getByTitle('" + SynonymsList + "')/Items?$select=Title,Synonym,TwoWay";
         var req: XMLHttpRequest = new XMLHttpRequest();
-        req.onreadystatechange = function() {
+        req.onreadystatechange = function () {
             if (this.readyState === 4) {
                 if (this.status === 200) {
                     let data = JSON.parse(this.response);
@@ -150,7 +151,7 @@ module spcsr.Search.VariableInjection {
         var cleanQuery: string = query.replace(/(-\w+)|(-"\w+.*?")|(-?\w+[:=<>]+\w+)|(-?\w+[:=<>]+".*?")|((\w+)?\(.*?\))|(AND)|(OR)|(NOT)/g, '');
         var queryParts: string[] = cleanQuery.match(/("[^"]+"|[^"\s]+)/g);
         var synonyms: string[] = [];
-                
+
         // code which should modify the current query based on context for each new query
         if (ShowSynonyms) {
             if (queryParts) {
@@ -168,12 +169,12 @@ module spcsr.Search.VariableInjection {
             // Call function to remove the noise words from the search query
             query = replaceNoiseWords(query);
         }
-        
+
         // Update the keyword query
         dataProvider.get_properties()[PROP_SYNONYMQUERY] = query;
         dataProvider.get_properties()[PROP_SYNONYM] = synonyms;
     }
-    
+
     // Function that replaces the noise words with nothing
     function replaceNoiseWords(query: string): string {
         let t = NOISE_WORDS.length;
@@ -195,9 +196,9 @@ module spcsr.Search.VariableInjection {
             // Query user hidden list - not accessible via REST
             // If you want TERM guid's you need to mix and match the use of UserProfileManager and TermStore and cache client side
             var urlCurrentUser: string = _siteUrl + "/_vti_bin/listdata.svc/UserInformationList?$filter=Id eq " + _spPageContextInfo.userId;
-            
+
             var req = new XMLHttpRequest();
-            req.onreadystatechange = function() {
+            req.onreadystatechange = function () {
                 if (this.readyState === 4) {
                     if (this.status === 200) {
                         var data = JSON.parse(this.response);
@@ -229,11 +230,19 @@ module spcsr.Search.VariableInjection {
         return defer.promise;
     }
 
+    function shouldProcessGroup(group: string): boolean {
+        if (RunOnWebParts.length === 0) return true;
+        if (RunOnWebParts.indexOf(group) != -1) return true;
+        if (RunOnWebParts.indexOf(group.toLowerCase()) != -1) return true;
+        if (RunOnWebParts.indexOf(group.toUpperCase()) != -1) return true;
+        return false;
+    }
+
     // Function to inject custom variables on page load
     function injectCustomQueryVariables(): void {
         var queryGroups = Srch.ScriptApplicationManager.get_current().queryGroups;
         for (var group in queryGroups) {
-            if (queryGroups.hasOwnProperty(group)) {
+            if (queryGroups.hasOwnProperty(group) && shouldProcessGroup(group)) {
                 var dataProvider = queryGroups[group].dataProvider;
                 var properties = dataProvider.get_properties();
                 // add all user variables fetched and stored as spcsrUser.
@@ -248,23 +257,23 @@ module spcsr.Search.VariableInjection {
                     // Process query (remove noise words and add synonyms)
                     processCustomQuery(e.queryState.k, sender)
                     // reset the processed IDs
-                    _processedIds= [];
+                    _processedIds = [];
                 });
 
                 _dataProviders.push(dataProvider);
             }
         }
     }
-    
+
     // Function to add the synonym highlighting to the highlighted properties
-    function setSynonymHighlighting (itemId: string, crntItem, mp: string): Function {
+    function setSynonymHighlighting(itemId: string, crntItem, mp: string): Function {
         var highlightedProp = crntItem[HIGHLIGHTED_PROPERTIES];
         var highlightedSummary = crntItem[HIGHLIGHTED_SUMMARY];
         // Check if ID is already processed
         if (_processedIds.indexOf(itemId) === -1) {
             var queryGroups = Srch.ScriptApplicationManager.get_current().queryGroups;
             for (var group in queryGroups) {
-                if (queryGroups.hasOwnProperty(group)) {
+                if (queryGroups.hasOwnProperty(group) && shouldProcessGroup(group)) {
                     var dataProvider = queryGroups[group].dataProvider;
                     var properties = dataProvider.get_properties();
                     // Check synonym custom property exists
@@ -273,7 +282,7 @@ module spcsr.Search.VariableInjection {
                         // Loop over all the synonyms for the current query
                         for (let i = 0; i < crntSynonyms.length; i++) {
                             let crntSynonym: string[] = crntSynonyms[i];
-                            for (let j = 0; j < crntSynonym.length; j++ ) {
+                            for (let j = 0; j < crntSynonym.length; j++) {
                                 let synonymVal: string = crntSynonym[j];
                                 // Remove quotes from the synonym
                                 synonymVal = synonymVal.replace(/['"]+/g, '');
@@ -295,7 +304,7 @@ module spcsr.Search.VariableInjection {
         // Call the original highlighting function
         return _getHighlightedProperty(itemId, crntItem, mp);
     }
-    
+
     // Function that finds the synonyms and adds the required highlight tags
     function highlightSynonyms(prop: string, synVal: string): string {
         // Only highlight synonyms when required
@@ -314,7 +323,7 @@ module spcsr.Search.VariableInjection {
                     prop = occurences;
                 }
             }
-            
+
             // Check the plurals of the synonym
             let synPlural: string = pluralize(synVal);
             if (synPlural !== synVal) {
@@ -323,7 +332,7 @@ module spcsr.Search.VariableInjection {
         }
         return prop;
     }
-    
+
     // Function which finds highlighted noise words and removes the highlight tags
     function removeNoiseHighlightWords(prop: string): string {
         // Only remove the noise words when required
@@ -338,7 +347,7 @@ module spcsr.Search.VariableInjection {
                 // Check if the noise word exists in the array
                 if (NOISE_WORDS.indexOf(noiseWord[1].toLowerCase()) !== -1) {
                     // Replace the highlighting with just the noise word
-                    prop = prop.replace(noiseWord[0], noiseWord[1]);   
+                    prop = prop.replace(noiseWord[0], noiseWord[1]);
                 }
             }
         }
@@ -349,7 +358,7 @@ module spcsr.Search.VariableInjection {
     function hookCustomQueryVariables() {
         // TODO: Check if we have cached data, if so, no need to intercept for async web parts
         // Override both executeQuery and executeQueries
-        Microsoft.SharePoint.Client.Search.Query.SearchExecutor.prototype.executeQuery = (query : Microsoft.SharePoint.Client.Search.Query.Query) => {
+        Microsoft.SharePoint.Client.Search.Query.SearchExecutor.prototype.executeQuery = (query: Microsoft.SharePoint.Client.Search.Query.Query) => {
             loadDataAndSearch();
             return new SP.JsonObjectResult();
         }
@@ -358,7 +367,7 @@ module spcsr.Search.VariableInjection {
             loadDataAndSearch();
             return new SP.JsonObjectResult();
         }
-        
+
         // Highlight synonyms and remove noise
         Srch.U.getHighlightedProperty = (itemId, crntItem, mp) => {
             return setSynonymHighlighting(itemId, crntItem, mp);

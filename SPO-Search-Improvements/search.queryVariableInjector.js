@@ -49,7 +49,7 @@
 	///<reference path="typings/pluralize/pluralize.d.ts" />
 	/*
 
-	Author: Mikael Svenson - Puzzlepart 2016 & Elio Struyf
+	Authors: Mikael Svenson - Elio Struyf
 	Twitter: @mikaelsvenson - @eliostruyf
 
 	Description
@@ -61,7 +61,7 @@
 
 	Usecase 1 - Static variables
 	----------------------------
-	Any variable which is persistant for the user across sessions should be loaded 
+	Any variable which is persistant for the user across sessions should be loaded
 
 	<TODO: describe load of user variables>
 	<TODO: describe synonyms scenarios>
@@ -82,6 +82,7 @@
 	var ShowSynonyms = true;
 	var RemoveNoiseWords = true;
 	var SynonymsList = 'Synonyms';
+	var RunOnWebParts = []; //Empty array runs on all web parts, if not add the name of the query group
 	var Q = __webpack_require__(1);
 	var pluralize = __webpack_require__(4);
 	var spcsr;
@@ -258,11 +259,22 @@
 	                });
 	                return defer.promise;
 	            }
+	            function shouldProcessGroup(group) {
+	                if (RunOnWebParts.length === 0)
+	                    return true;
+	                if (RunOnWebParts.indexOf(group) != -1)
+	                    return true;
+	                if (RunOnWebParts.indexOf(group.toLowerCase()) != -1)
+	                    return true;
+	                if (RunOnWebParts.indexOf(group.toUpperCase()) != -1)
+	                    return true;
+	                return false;
+	            }
 	            // Function to inject custom variables on page load
 	            function injectCustomQueryVariables() {
 	                var queryGroups = Srch.ScriptApplicationManager.get_current().queryGroups;
 	                for (var group in queryGroups) {
-	                    if (queryGroups.hasOwnProperty(group)) {
+	                    if (queryGroups.hasOwnProperty(group) && shouldProcessGroup(group)) {
 	                        var dataProvider = queryGroups[group].dataProvider;
 	                        var properties = dataProvider.get_properties();
 	                        // add all user variables fetched and stored as spcsrUser.
