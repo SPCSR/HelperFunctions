@@ -1,7 +1,23 @@
-#SharePoint Online - User Profile Properties, Noise Words, and Synonyms
+#SharePoint Online / 2013 / 2016 - User Profile Properties, Noise Words, and Synonyms
+##Description
+The query system in SharePoint Search allows for the expansion of query variables query time to create contextual search experiences. Query variables are used in the query templates, specified in web parts, result sources or in query rules.
+
+> An overview of query variables can be found at [S15E03 Query Variables – Constant Trouble](http://www.techmikael.com/2014/05/s15e03-query-variables-constant-trouble.html).
+
+While the query system is quite flexible it has some shortcomings. This project aims to solve the below scenarios, as well as to provide sample code on how you can intercept the query cycle on a SharePoint
+page to inject your own asynchronous custom logic before the search query is sent to the server for execution.
+
+1. Synonym expansion without the need for query rules (which becomes very unmanageable over time)
+1. Alternative expansion of {User.} variables without a negative impact on SharePoint servers
+1. Remove custom noise words from the query
+1. Load business data asynchronously to be used in custom query variables
+1. Add a mechanism to trigger query rules by user segments with client side code [Server approach MSDN](https://msdn.microsoft.com/en-us/library/office/jj870831.aspx)
+
+> **Note:** In order to inject data before the first search query, the web part must run in asynchronous mode to allow this script to load and intercept.
+
 ##Installation
 1. Clone this repo
-2. Open a command promp
+2. Open a command prompt
 3. Navigate to your folder
 4. Execute
 ``
