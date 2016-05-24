@@ -31,7 +31,7 @@ const SynonymsList = 'Synonyms';
 ##Creating the Synonyms List
 Create a **Synonyms** (list name) SharePoint list with the following fields: **Title**, **Synonym** (multiple lines without markup), **TwoWay** (yes/no).
 
-![Synonyms list](https://raw.githubusercontent.com/SPCSR/HelperFunctions/SPO-Search-Improvements/synonym-list.png "Synonyms list")
+![Synonyms list](https://raw.githubusercontent.com/SPCSR/HelperFunctions/master/SPO-Search-Improvements/synonym-list.png "Synonyms list")
 
 **Important**: insert the synonyms comma seperated like you can see in the screenshot.
 
@@ -66,7 +66,7 @@ The **TwoWay** field is in place to solve this issue so that you only have to sp
 ##Result
 If I do a search query for **mp** on my environment, I should also get results for **managed property**.
 
-![MP Search Query](https://raw.githubusercontent.com/SPCSR/HelperFunctions/SPO-Search-Improvements/screenshots/example.png "MP Search Query")
+![MP Search Query](https://raw.githubusercontent.com/SPCSR/HelperFunctions/master/SPO-Search-Improvements/screenshots/example.png "MP Search Query")
 
 ##Credits
 Thank you [Mikael Svenson](https://twitter.com/mikaelsvenson) for creating the initial script.
