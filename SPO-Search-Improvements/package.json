@@ -1,0 +1,14 @@
+{
+  "name": "sharepoint-search-synonyms",
+  "version": "1.0.0",
+  "description": "This is a script for SPO to support search synonyms",
+  "main": "search.queryVariableInjector.ts",
+  "author": "Mikael Svenson & Elio Struyf",
+  "license": "ISC",
+  "dependencies": {
+    "pluralize": "^2.0.0",
+    "q": "^1.4.1",
+    "ts-loader": "^0.8.2",
+    "typescript": "^1.8.10"
+  }
+}
