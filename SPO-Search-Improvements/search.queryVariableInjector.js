@@ -302,7 +302,7 @@
 	                if (_processedIds.indexOf(itemId) === -1) {
 	                    var queryGroups = Srch.ScriptApplicationManager.get_current().queryGroups;
 	                    for (var group in queryGroups) {
-	                        if (queryGroups.hasOwnProperty(group)) {
+	                        if (queryGroups.hasOwnProperty(group) && shouldProcessGroup(group)) {
 	                            var dataProvider = queryGroups[group].dataProvider;
 	                            var properties = dataProvider.get_properties();
 	                            // Check synonym custom property exists
