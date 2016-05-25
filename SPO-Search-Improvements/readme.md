@@ -42,6 +42,8 @@ const ShowSynonyms = true;
 const RemoveNoiseWords = true;
 // Synonym list title
 const SynonymsList = 'Synonyms';
+// Empty array runs on all web parts or add the name of the query group.
+const RunOnWebParts = []; 
 ```
 
 ##Creating the Synonyms List
