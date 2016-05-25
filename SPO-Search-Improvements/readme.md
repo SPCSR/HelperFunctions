@@ -40,11 +40,47 @@ const GetUserProfileProperties = true;
 const ShowSynonyms = true;
 // Remove noise words from your search queries
 const RemoveNoiseWords = true;
+// Add custom date variables
+const UseDateVariables = true;
 // Synonym list title
 const SynonymsList = 'Synonyms';
 // Empty array runs on all web parts or add the name of the query group.
+// See https://skodvinhvammen.wordpress.com/2015/11/30/how-to-connect-search-result-webparts-using-query-groups/
 const RunOnWebParts = []; 
+// Names of weekdays
+const Weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+// Names of months
+const Months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
 ```
+#List of added query variables
+
+Query variable| Description|
+------------- | -------------|
+{SynonymQuery} | Re-written query to include synonyms in addition to the original query|
+{Synonyms} | Variable containing all the expanded synonyms|
+{spcsrUser.&lt;property&gt;} |The property can be any user profile property synchronized to the hidden user information list in SharePoint (*/_catalogs/users/simple.aspx*). The following properties should be available by default: <ul><li>Name</li><li>Account</li><li>WorkEmail</li><li>MobilePhone</li><li>AboutMe</li><li>SIPAddress</li><li>Department</li><li>Title</li><li>FirstName</li><li>LastName</li><li>WorkPhone</li><li>UserName</li><li>AskMeAbout</li><li>Office</li></ul>Multi value properties should be expanded as suchusing the **{&#124;...}** syntax, for example **{&#124;{spcsrUser.AskMeAbout}}**
+{Date} | Date of the month 1-31
+{UTCDate} | Date of the month 1-31, based on the UTC time zone
+{WeekDay}| Name of weekday in English *(can be edited in the file)* 
+{UTCWeekDay}| Name of weekday in English *(can be edited in the file)*, based on the UTC time zone
+{Hours}| Hour of the day 0-23
+{UTCHours}| Hour of the day 0-23, based on the UTC time zone
+{Month}| Name of the month in English *(can be edited in the file)*
+{UTCMonth}| Name of the month in English *(can be edited in the file)*, based on the UTC time zone
+{MonthNumber}| Number of the month 1-12
+{UTCMonthNumber}|Number of the month 1-12, based on the UTC time zone
+{Year}| Four digit year
+{UTCYear}| Four digit year, based on the UTC time zone
+{Week}| Week number according to ISO-8601
+{UTCWeek}| Week number according to ISO-8601, based on the UTC time zone
+
+#Synonyms
+In SharePoint Online the only option you have for synonym expansion is to use query rules which works, but turn into a very tedious task. Also, if you use search operators as part of the query, query rules will not trigger at all.
+
+Using a SharePoint list to handle synonyms makes more sense from a maintenance perspective, and our solution is also more robust.
+
+What happens when the page loads is that it will read all the synonyms from the list, and for each query it will add the re-written query to a query variable **{SynonymQuery}** with the synonyms itself in **{Synonyms}**. 
 
 ##Creating the Synonyms List
 Create a **Synonyms** (list name) SharePoint list with the following fields: **Title**, **Synonym** (multiple lines without markup), **TwoWay** (yes/no).
@@ -86,5 +122,36 @@ If I do a search query for **mp** on my environment, I should also get results f
 
 ![MP Search Query](https://raw.githubusercontent.com/SPCSR/HelperFunctions/master/SPO-Search-Improvements/screenshots/example.png "MP Search Query")
 
-##Credits
-Thank you [Mikael Svenson](https://twitter.com/mikaelsvenson) for creating the initial script.
+#Trigger query rules on User Segments
+&lt;TODO&gt;
+
+#Technical details
+In order to modify a SharePoint search query before it's being executed you need to hook in your logic at the right stage in the pages JavaScript lifecycle.
+This is achieved with the following code snippet:
+
+```javascript
+function hookCustomQueryVariables() {
+    // Override both executeQuery and executeQueries
+    Microsoft.SharePoint.Client.Search.Query.SearchExecutor.prototype.executeQuery = function (query) {
+        loadDataAndSearch();
+        return new SP.JsonObjectResult();
+    };
+    Microsoft.SharePoint.Client.Search.Query.SearchExecutor.prototype.executeQueries = function (queryIds, queries, handleExceptions) {
+        loadDataAndSearch();
+        return new SP.JsonObjectResult();
+    };
+    // Highlight synonyms and remove noise
+    Srch.U.getHighlightedProperty = function (itemId, crntItem, mp) {
+        return setSynonymHighlighting(itemId, crntItem, mp);
+    };
+}
+ExecuteOrDelayUntilBodyLoaded(function () {
+    Sys.Application.add_init(hookCustomQueryVariables);
+});
+```
+**ExecuteOrDelayUntilBodyLoaded** is first in the life cycle, and ensures our script runs before the SharePoint search web parts. Then we override the single and multi-query functions which allows us to stop the query cycle and perform any asynchronous loading operation before the query continues.
+
+Included is the loading of a users profile properties and synonyms from a list, but this could be a call out to any system which have information you need when crafting a search query.
+
+#Credits
+Thank you [Mikael Svenson](https://twitter.com/mikaelsvenson) for creating the initial script, and to [Elio Struyf](https://twitter.com/eliostruyf) for doing the synonym list implementation.
