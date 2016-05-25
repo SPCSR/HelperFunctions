@@ -37,8 +37,12 @@ The following query has to be set in the search web part:
 const GetUserProfileProperties = false;
 const ShowSynonyms = true;
 const RemoveNoiseWords = true;
+const UseDateVariables = true;
 const SynonymsList = 'Synonyms';
-const RunOnWebParts = []; //Empty array runs on all web parts, if not add the name of the query group
+const RunOnWebParts = []; //Empty array runs on all web parts, if not add the name of the query group - See https://skodvinhvammen.wordpress.com/2015/11/30/how-to-connect-search-result-webparts-using-query-groups/
+const Weekdays: string[] = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const Months: string[] = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
 /****************************************************************************
  * End of the properties to configure                                       *
  ****************************************************************************/
@@ -76,7 +80,11 @@ module spcsr.Search.VariableInjection {
         if (!_loading) {
             _loading = true;
             // run all async code needed to pull in data for variables
-            Q.all([loadSynonyms(), loadUserVariables()]).done(() => {
+            Q.all([loadSynonyms(), loadUserVariables(),]).done(() => {
+                // add date variables
+                if (UseDateVariables) {
+                    setDateVariables();
+                }
                 // set loaded data as custom query variables
                 injectCustomQueryVariables();
 
@@ -228,6 +236,38 @@ module spcsr.Search.VariableInjection {
             req.send();
         });
         return defer.promise;
+    }
+
+    function getWeekNumber(d: Date) {
+        d.setHours(0, 0, 0);
+        d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+        return Math.ceil((((d.getTime() - new Date(d.getFullYear(), 0, 1).getTime()) / 8.64e7) + 1) / 7);
+    };
+
+    // More date variables
+    function setDateVariables() {
+        let today: Date = new Date();
+        _userDefinedVariables["Date"] = today.getDate();
+        _userDefinedVariables["UTCDate"] = today.getUTCDate();
+
+        _userDefinedVariables["WeekDay"] = Weekdays[today.getUTCDate()];
+        _userDefinedVariables["UTCWeekDay"] = Weekdays[today.getUTCDate()];
+
+        _userDefinedVariables["Hours"] = Weekdays[today.getHours()];
+        _userDefinedVariables["UTCHours"] = Weekdays[today.getUTCHours()];
+
+        _userDefinedVariables["Month"] = Months[today.getMonth()];
+        _userDefinedVariables["UTCMonth"] = Months[today.getUTCMonth()];
+
+        _userDefinedVariables["MonthNumber"] = today.getMonth() + 1;
+        _userDefinedVariables["UTCMonthNumber"] = today.getUTCMonth() + 1;
+
+        _userDefinedVariables["Year"] = today.getFullYear();
+        _userDefinedVariables["UTCYear"] = today.getUTCFullYear();
+
+        _userDefinedVariables["Week"] = getWeekNumber(today);
+        let utcDate: Date = new Date(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), today.getUTCHours());
+        _userDefinedVariables["UTCWeek"] = getWeekNumber(utcDate);
     }
 
     function shouldProcessGroup(group: string): boolean {

@@ -81,8 +81,11 @@
 	var GetUserProfileProperties = false;
 	var ShowSynonyms = true;
 	var RemoveNoiseWords = true;
+	var UseDateVariables = true;
 	var SynonymsList = 'Synonyms';
-	var RunOnWebParts = []; //Empty array runs on all web parts, if not add the name of the query group
+	var RunOnWebParts = []; //Empty array runs on all web parts, if not add the name of the query group - See https://skodvinhvammen.wordpress.com/2015/11/30/how-to-connect-search-result-webparts-using-query-groups/
+	var Weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+	var Months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 	var Q = __webpack_require__(1);
 	var pluralize = __webpack_require__(4);
 	var spcsr;
@@ -110,7 +113,11 @@
 	                if (!_loading) {
 	                    _loading = true;
 	                    // run all async code needed to pull in data for variables
-	                    Q.all([loadSynonyms(), loadUserVariables()]).done(function () {
+	                    Q.all([loadSynonyms(), loadUserVariables(),]).done(function () {
+	                        // add date variables
+	                        if (UseDateVariables) {
+	                            setDateVariables();
+	                        }
 	                        // set loaded data as custom query variables
 	                        injectCustomQueryVariables();
 	                        // reset to original function
@@ -258,6 +265,31 @@
 	                    req.send();
 	                });
 	                return defer.promise;
+	            }
+	            function getWeekNumber(d) {
+	                d.setHours(0, 0, 0);
+	                d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+	                return Math.ceil((((d.getTime() - new Date(d.getFullYear(), 0, 1).getTime()) / 8.64e7) + 1) / 7);
+	            }
+	            ;
+	            // More date variables
+	            function setDateVariables() {
+	                var today = new Date();
+	                _userDefinedVariables["Date"] = today.getDate();
+	                _userDefinedVariables["UTCDate"] = today.getUTCDate();
+	                _userDefinedVariables["WeekDay"] = Weekdays[today.getUTCDate()];
+	                _userDefinedVariables["UTCWeekDay"] = Weekdays[today.getUTCDate()];
+	                _userDefinedVariables["Hours"] = Weekdays[today.getHours()];
+	                _userDefinedVariables["UTCHours"] = Weekdays[today.getUTCHours()];
+	                _userDefinedVariables["Month"] = Months[today.getMonth()];
+	                _userDefinedVariables["UTCMonth"] = Months[today.getUTCMonth()];
+	                _userDefinedVariables["MonthNumber"] = today.getMonth() + 1;
+	                _userDefinedVariables["UTCMonthNumber"] = today.getUTCMonth() + 1;
+	                _userDefinedVariables["Year"] = today.getFullYear();
+	                _userDefinedVariables["UTCYear"] = today.getUTCFullYear();
+	                _userDefinedVariables["Week"] = getWeekNumber(today);
+	                var utcDate = new Date(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), today.getUTCHours());
+	                _userDefinedVariables["UTCWeek"] = getWeekNumber(utcDate);
 	            }
 	            function shouldProcessGroup(group) {
 	                if (RunOnWebParts.length === 0)
