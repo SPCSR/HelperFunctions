@@ -277,10 +277,10 @@
 	                var today = new Date();
 	                _userDefinedVariables["Date"] = today.getDate();
 	                _userDefinedVariables["UTCDate"] = today.getUTCDate();
-	                _userDefinedVariables["WeekDay"] = Weekdays[today.getUTCDate()];
-	                _userDefinedVariables["UTCWeekDay"] = Weekdays[today.getUTCDate()];
-	                _userDefinedVariables["Hours"] = Weekdays[today.getHours()];
-	                _userDefinedVariables["UTCHours"] = Weekdays[today.getUTCHours()];
+	                _userDefinedVariables["WeekDay"] = Weekdays[today.getDay()];
+	                _userDefinedVariables["UTCWeekDay"] = Weekdays[today.getUTCDay()];
+	                _userDefinedVariables["Hours"] = today.getHours();
+	                _userDefinedVariables["UTCHours"] = today.getUTCHours();
 	                _userDefinedVariables["Month"] = Months[today.getMonth()];
 	                _userDefinedVariables["UTCMonth"] = Months[today.getUTCMonth()];
 	                _userDefinedVariables["MonthNumber"] = today.getMonth() + 1;
