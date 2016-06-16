@@ -113,7 +113,7 @@
 	                if (!_loading) {
 	                    _loading = true;
 	                    // run all async code needed to pull in data for variables
-	                    Q.all([loadSynonyms(), loadUserVariables(),]).done(function () {
+	                    Q.all([loadSynonyms(), loadUserVariables()]).done(function () {
 	                        // add date variables
 	                        if (UseDateVariables) {
 	                            setDateVariables();
@@ -147,8 +147,11 @@
 	                    if (this.readyState === 4) {
 	                        if (this.status === 200) {
 	                            var data = JSON.parse(this.response);
-	                            if (typeof data.value !== 'undefined') {
-	                                var results = data.value;
+	                            if (typeof data.d !== 'undefined') {
+	                                if (typeof data.d.results === 'undefined') {
+	                                    defer.reject(null);
+	                                }
+	                                var results = data.d.results;
 	                                if (results.length) {
 	                                    var _loop_1 = function(i) {
 	                                        var item = results[i];
@@ -182,7 +185,8 @@
 	                    }
 	                };
 	                req.open('GET', urlSynonymsList, true);
-	                req.setRequestHeader('Accept', 'application/json');
+	                req.setRequestHeader('Accept', 'application/json;odata=verbose');
+	                req.setRequestHeader("Content-type", "application/json;odata=verbose");
 	                req.send();
 	                return defer.promise;
 	            }
@@ -261,7 +265,8 @@
 	                        }
 	                    };
 	                    req.open('GET', urlCurrentUser, true);
-	                    req.setRequestHeader('Accept', 'application/json');
+	                    req.setRequestHeader('Accept', 'application/json;odata=verbose');
+	                    req.setRequestHeader("Content-type", "application/json;odata=verbose");
 	                    req.send();
 	                });
 	                return defer.promise;

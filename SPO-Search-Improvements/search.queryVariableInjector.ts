@@ -80,7 +80,7 @@ module spcsr.Search.VariableInjection {
         if (!_loading) {
             _loading = true;
             // run all async code needed to pull in data for variables
-            Q.all([loadSynonyms(), loadUserVariables(),]).done(() => {
+            Q.all([loadSynonyms(), loadUserVariables()]).done(() => {
                 // add date variables
                 if (UseDateVariables) {
                     setDateVariables();
@@ -117,8 +117,11 @@ module spcsr.Search.VariableInjection {
             if (this.readyState === 4) {
                 if (this.status === 200) {
                     let data = JSON.parse(this.response);
-                    if (typeof data.value !== 'undefined') {
-                        let results: SynonymValue[] = data.value;
+                    if (typeof data.d !== 'undefined') {
+                        if (typeof data.d.results === 'undefined') {
+                            defer.reject(null);
+                        }
+                        let results: SynonymValue[] = data.d.results;
                         if (results.length) {
                             for (let i = 0; i < results.length; i++) {
                                 let item = results[i];
@@ -148,7 +151,8 @@ module spcsr.Search.VariableInjection {
             }
         }
         req.open('GET', urlSynonymsList, true);
-        req.setRequestHeader('Accept', 'application/json');
+        req.setRequestHeader('Accept', 'application/json;odata=verbose');
+        req.setRequestHeader("Content-type", "application/json;odata=verbose");
         req.send();
         return defer.promise;
     }
@@ -205,7 +209,7 @@ module spcsr.Search.VariableInjection {
             // If you want TERM guid's you need to mix and match the use of UserProfileManager and TermStore and cache client side
             var urlCurrentUser: string = _siteUrl + "/_vti_bin/listdata.svc/UserInformationList?$filter=Id eq " + _spPageContextInfo.userId;
 
-            var req = new XMLHttpRequest();
+            var req: XMLHttpRequest = new XMLHttpRequest();
             req.onreadystatechange = function () {
                 if (this.readyState === 4) {
                     if (this.status === 200) {
@@ -232,7 +236,8 @@ module spcsr.Search.VariableInjection {
                 }
             }
             req.open('GET', urlCurrentUser, true);
-            req.setRequestHeader('Accept', 'application/json');
+            req.setRequestHeader('Accept', 'application/json;odata=verbose');
+            req.setRequestHeader("Content-type", "application/json;odata=verbose");
             req.send();
         });
         return defer.promise;
