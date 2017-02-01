@@ -6,10 +6,10 @@
   "author": "Mikael Svenson & Elio Struyf",
   "license": "ISC",
   "dependencies": {
-    "pluralize": "^2.0.0",
-    "q": "^1.4.1",
-    "ts-loader": "^0.8.2",
-    "typescript": "^1.8.10",
-    "webpack": "^1.13.1"
+    "pluralize": "2.0.0",
+    "q": "1.4.1",
+    "ts-loader": "0.8.2",
+    "typescript": "1.8.10",
+    "webpack": "1.14.0"
   }
 }
