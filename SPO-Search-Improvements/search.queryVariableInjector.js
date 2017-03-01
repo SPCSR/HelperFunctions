@@ -146,7 +146,7 @@
 	                req.onreadystatechange = function () {
 	                    if (this.readyState === 4) {
 	                        if (this.status === 200) {
-	                            var data = JSON.parse(this.response);
+	                            var data = JSON.parse(this.responseText);
 	                            if (typeof data.d !== 'undefined') {
 	                                if (typeof data.d.results === 'undefined') {
 	                                    defer.reject(null);
@@ -241,7 +241,7 @@
 	                    req.onreadystatechange = function () {
 	                        if (this.readyState === 4) {
 	                            if (this.status === 200) {
-	                                var data = JSON.parse(this.response);
+	                                var data = JSON.parse(this.responseText);
 	                                var user = data['d']['results'][0];
 	                                for (var property in user) {
 	                                    if (user.hasOwnProperty(property)) {
