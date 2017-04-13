@@ -99,8 +99,8 @@
 	            var _synonymTable = {};
 	            var _dataProviders = [];
 	            var _processedIds = [];
-	            var _origExecuteQuery = Microsoft.SharePoint.Client.Search.Query.SearchExecutor.prototype.executeQuery;
-	            var _origExecuteQueries = Microsoft.SharePoint.Client.Search.Query.SearchExecutor.prototype.executeQueries;
+	            var _origExecuteQuery;
+	            var _origExecuteQueries;
 	            var _getHighlightedProperty = Srch.U.getHighlightedProperty;
 	            var _siteUrl = _spPageContextInfo.webAbsoluteUrl;
 	            var PROP_SYNONYMQUERY = "SynonymQuery";
@@ -312,22 +312,24 @@
 	                var queryGroups = Srch.ScriptApplicationManager.get_current().queryGroups;
 	                for (var group in queryGroups) {
 	                    if (queryGroups.hasOwnProperty(group) && shouldProcessGroup(group)) {
-	                        var dataProvider = queryGroups[group].dataProvider;
-	                        var properties = dataProvider.get_properties();
-	                        // add all user variables fetched and stored as spcsrUser.
-	                        for (var prop in _userDefinedVariables) {
-	                            if (_userDefinedVariables.hasOwnProperty(prop)) {
-	                                properties[prop] = _userDefinedVariables[prop];
+	                        if (typeof queryGroups[group].dataProvider !== "undefined" && queryGroups[group].dataProvider !== null) {
+	                            var dataProvider = queryGroups[group].dataProvider;
+	                            var properties = dataProvider.get_properties();
+	                            // add all user variables fetched and stored as spcsrUser.
+	                            for (var prop in _userDefinedVariables) {
+	                                if (_userDefinedVariables.hasOwnProperty(prop)) {
+	                                    properties[prop] = _userDefinedVariables[prop];
+	                                }
 	                            }
+	                            // set hook for query time variables which can change
+	                            dataProvider.add_queryIssuing(function (sender, e) {
+	                                // Process query (remove noise words and add synonyms)
+	                                processCustomQuery(e.queryState.k, sender);
+	                                // reset the processed IDs
+	                                _processedIds = [];
+	                            });
+	                            _dataProviders.push(dataProvider);
 	                        }
-	                        // set hook for query time variables which can change
-	                        dataProvider.add_queryIssuing(function (sender, e) {
-	                            // Process query (remove noise words and add synonyms)
-	                            processCustomQuery(e.queryState.k, sender);
-	                            // reset the processed IDs
-	                            _processedIds = [];
-	                        });
-	                        _dataProviders.push(dataProvider);
 	                    }
 	                }
 	            }
@@ -340,28 +342,30 @@
 	                    var queryGroups = Srch.ScriptApplicationManager.get_current().queryGroups;
 	                    for (var group in queryGroups) {
 	                        if (queryGroups.hasOwnProperty(group) && shouldProcessGroup(group)) {
-	                            var dataProvider = queryGroups[group].dataProvider;
-	                            var properties = dataProvider.get_properties();
-	                            // Check synonym custom property exists
-	                            if (typeof properties[PROP_SYNONYM] !== 'undefined') {
-	                                var crntSynonyms = properties[PROP_SYNONYM];
-	                                // Loop over all the synonyms for the current query
-	                                for (var i = 0; i < crntSynonyms.length; i++) {
-	                                    var crntSynonym = crntSynonyms[i];
-	                                    for (var j = 0; j < crntSynonym.length; j++) {
-	                                        var synonymVal = crntSynonym[j];
-	                                        // Remove quotes from the synonym
-	                                        synonymVal = synonymVal.replace(/['"]+/g, '');
-	                                        // Highlight synonyms and remove the noise words
-	                                        highlightedProp = highlightSynonyms(highlightedProp, synonymVal);
-	                                        highlightedSummary = highlightSynonyms(highlightedSummary, synonymVal);
+	                            if (typeof queryGroups[group].dataProvider !== "undefined" && queryGroups[group].dataProvider !== null) {
+	                                var dataProvider = queryGroups[group].dataProvider;
+	                                var properties = dataProvider.get_properties();
+	                                // Check synonym custom property exists
+	                                if (typeof properties[PROP_SYNONYM] !== 'undefined') {
+	                                    var crntSynonyms = properties[PROP_SYNONYM];
+	                                    // Loop over all the synonyms for the current query
+	                                    for (var i = 0; i < crntSynonyms.length; i++) {
+	                                        var crntSynonym = crntSynonyms[i];
+	                                        for (var j = 0; j < crntSynonym.length; j++) {
+	                                            var synonymVal = crntSynonym[j];
+	                                            // Remove quotes from the synonym
+	                                            synonymVal = synonymVal.replace(/['"]+/g, '');
+	                                            // Highlight synonyms and remove the noise words
+	                                            highlightedProp = highlightSynonyms(highlightedProp, synonymVal);
+	                                            highlightedSummary = highlightSynonyms(highlightedSummary, synonymVal);
+	                                        }
 	                                    }
 	                                }
+	                                // Remove the noise words
+	                                highlightedProp = removeNoiseHighlightWords(highlightedProp);
+	                                highlightedSummary = removeNoiseHighlightWords(highlightedSummary);
+	                                _processedIds.push(itemId);
 	                            }
-	                            // Remove the noise words
-	                            highlightedProp = removeNoiseHighlightWords(highlightedProp);
-	                            highlightedSummary = removeNoiseHighlightWords(highlightedSummary);
-	                            _processedIds.push(itemId);
 	                        }
 	                    }
 	                }
@@ -418,6 +422,8 @@
 	            }
 	            // Loader function to hook in client side custom query variables
 	            function hookCustomQueryVariables() {
+	                _origExecuteQuery = Microsoft.SharePoint.Client.Search.Query.SearchExecutor.prototype.executeQuery;
+	                _origExecuteQueries = Microsoft.SharePoint.Client.Search.Query.SearchExecutor.prototype.executeQueries;
 	                // TODO: Check if we have cached data, if so, no need to intercept for async web parts
 	                // Override both executeQuery and executeQueries
 	                Microsoft.SharePoint.Client.Search.Query.SearchExecutor.prototype.executeQuery = function (query) {
