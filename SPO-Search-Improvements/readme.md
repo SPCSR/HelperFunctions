@@ -1,5 +1,5 @@
-#SharePoint Online / 2013 / 2016 - User Profile Properties, Noise Words, and Synonyms
-##Description
+# SharePoint Online / 2013 / 2016 - User Profile Properties, Noise Words, and Synonyms
+## Description
 The query system in SharePoint Search allows for the expansion of query variables query time to create contextual search experiences. Query variables are used in the query templates, specified in web parts, result sources or in query rules.
 
 > An overview of query variables can be found at [S15E03 Query Variables – Constant Trouble](http://www.techmikael.com/2014/05/s15e03-query-variables-constant-trouble.html).
@@ -15,7 +15,7 @@ page to inject your own asynchronous custom logic before the search query is sen
 
 > **Note:** In order to inject data before the first search query, the web part must run in asynchronous mode to allow this script to load and intercept.
 
-##Installation
+## Installation
 1. Clone this repo
 2. Open a command prompt
 3. Navigate to your folder
@@ -26,10 +26,10 @@ npm install
 
 **Important**: You need to have webpack installed - ``npm install webpack -p``
 
-##Compile the code
+## Compile the code
 1. Run ``webpack`` or ``webpack -p`` (if you want the minimized version)
 
-##Script configuration
+## Script configuration
 With the script you are able to automatically retrieve all the user profile properties, remove noise words from the query and search for synonyms.
 
 You have the option to define which type of actions you want to include in your environment:
@@ -53,7 +53,7 @@ const Weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Frida
 const Months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 ```
-#List of added query variables
+# List of added query variables
 
 Query variable| Description|
 ------------- | -------------|
@@ -75,21 +75,21 @@ Query variable| Description|
 {Week}| Week number according to ISO-8601
 {UTCWeek}| Week number according to ISO-8601, based on the UTC time zone
 
-#Synonyms
+# Synonyms
 In SharePoint Online the only option you have for synonym expansion is to use query rules which works, but turn into a very tedious task. Also, if you use search operators as part of the query, query rules will not trigger at all.
 
 Using a SharePoint list to handle synonyms makes more sense from a maintenance perspective, and our solution is also more robust.
 
 What happens when the page loads is that it will read all the synonyms from the list, and for each query it will add the re-written query to a query variable **{SynonymQuery}** with the synonyms itself in **{Synonyms}**. 
 
-##Creating the Synonyms List
+## Creating the Synonyms List
 Create a **Synonyms** (list name) SharePoint list with the following fields: **Title**, **Synonym** (multiple lines without markup), **TwoWay** (yes/no).
 
 ![Synonyms list](https://raw.githubusercontent.com/SPCSR/HelperFunctions/master/SPO-Search-Improvements/synonym-list.png "Synonyms list")
 
 **Important**: insert the synonyms comma seperated like you can see in the screenshot.
 
-###Info
+### Info
 By default if you create a thesaurus csv for SharePoint and want to make the synonym work in both ways, you have to specify multiple entries. 
 
 ```
@@ -107,7 +107,7 @@ Human Resources,HR
 
 The **TwoWay** field is in place to solve this issue so that you only have to specify one rule for each synony. So when the synonym should work in both ways, you set the field to **yes**. This also works when you enter multiple values in the Synonym field.
 
-##Usage
+## Usage
 1. Upload the file to your SharePoint Site.
 2. Copy the file reference
 3. On each search page, add a script editor web part
@@ -117,12 +117,12 @@ The **TwoWay** field is in place to solve this issue so that you only have to sp
 7. Go to the **Settings** tab and set the **loading behavior** to **Async option: Issue query from the browser**
 8. Store these settings and publish the page
 
-##Result
+## Result
 If I do a search query for **mp** on my environment, I should also get results for **managed property**.
 
 ![MP Search Query](https://raw.githubusercontent.com/SPCSR/HelperFunctions/master/SPO-Search-Improvements/screenshots/example.png "MP Search Query")
 
-#Trigger query rules on User Segments
+# TRigger query rules on User Segments
 &lt;TODO&gt;
 
 #Technical details
@@ -153,5 +153,5 @@ ExecuteOrDelayUntilBodyLoaded(function () {
 
 Included is the loading of a users profile properties and synonyms from a list, but this could be a call out to any system which have information you need when crafting a search query.
 
-#Credits
+# Credits
 Thank you [Mikael Svenson](https://twitter.com/mikaelsvenson) for creating the initial script, and to [Elio Struyf](https://twitter.com/eliostruyf) for doing the synonym list implementation.
