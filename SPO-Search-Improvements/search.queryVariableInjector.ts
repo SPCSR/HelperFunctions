@@ -105,7 +105,7 @@ module spcsr.Search.VariableInjection {
     }
 
     function splitSynonyms(value: string){
-        return value.match(/("[^"]*")|[^;]+/g)
+        return value.split(/,(?![^"]*"(?:(?:[^"]*"){2})*[^"]*$)/)
     }
 
     // Function to load synonyms asynchronous - poor mans synonyms
@@ -162,6 +162,13 @@ module spcsr.Search.VariableInjection {
         return defer.promise;
     }
 
+    function formatSynonym(value: string){
+        value = value.trim().replace(/"/g, '').trim()
+        value = '"' + value + '"'
+
+        return value
+    }
+
     function formatSynonymsSearchQuery(items: string[]){
         let result = ''
 
@@ -169,8 +176,7 @@ module spcsr.Search.VariableInjection {
             var item = items[i]
             
             if( item.length > 0 ){
-                item = item.trim()
-                item = '"' + item.replace(/"/g, '') + '"'
+                item = formatSynonym(item)
                 
                 result += item
                 
@@ -202,7 +208,7 @@ module spcsr.Search.VariableInjection {
                         // Replace the current query part in the query with all the synonyms
                         query = query.replace(queryParts[i], 
                             String.format('({0} OR {1})', 
-                            queryParts[i], 
+                            formatSynonym(queryParts[i]), 
                             formatSynonymsSearchQuery(value)));
 
                         synonyms.push(value);
