@@ -104,6 +104,10 @@ module spcsr.Search.VariableInjection {
         }
     }
 
+    function splitSynonyms(value: string){
+        return value.split(/,(?![^"]*"(?:(?:[^"]*"){2})*[^"]*$)/)
+    }
+
     // Function to load synonyms asynchronous - poor mans synonyms
     function loadSynonyms() {
         var defer = Q.defer();
@@ -112,7 +116,7 @@ module spcsr.Search.VariableInjection {
             defer.resolve();
             return defer.promise;
         }
-        var urlSynonymsList: string = _siteUrl + "/_api/Web/Lists/getByTitle('" + SynonymsList + "')/Items?$select=Title,Synonym,TwoWay";
+        var urlSynonymsList: string = _siteUrl + "/_api/Web/Lists/getByTitle('" + SynonymsList + "')/Items?$top=1000&$select=Title,Synonym,TwoWay";
         var req: XMLHttpRequest = new XMLHttpRequest();
         req.onreadystatechange = function () {
             if (this.readyState === 4) {
@@ -127,7 +131,7 @@ module spcsr.Search.VariableInjection {
                             for (let i = 0; i < results.length; i++) {
                                 let item = results[i];
                                 if (item.TwoWay) {
-                                    let synonyms: string[] = item.Synonym.split(',');
+                                    let synonyms: string[] = splitSynonyms(item.Synonym)
                                     // Set the default synonym
                                     _synonymTable[item.Title.toLowerCase()] = synonyms;
                                     // Loop over the list of synonyms
@@ -138,7 +142,7 @@ module spcsr.Search.VariableInjection {
                                     });
                                 } else {
                                     // Set a single synonym
-                                    _synonymTable[item.Title.toLowerCase()] = item.Synonym.split(',');
+                                    _synonymTable[item.Title.toLowerCase()] = splitSynonyms(item.Synonym)
                                 }
                             }
                         }
@@ -158,6 +162,33 @@ module spcsr.Search.VariableInjection {
         return defer.promise;
     }
 
+    function formatSynonym(value: string){
+        value = value.trim().replace(/"/g, '').trim()
+        value = '"' + value + '"'
+
+        return value
+    }
+
+    function formatSynonymsSearchQuery(items: string[]){
+        let result = ''
+
+        for( var i = 0; i < items.length; i++){
+            var item = items[i]
+            
+            if( item.length > 0 ){
+                item = formatSynonym(item)
+                
+                result += item
+                
+                if( i < items.length - 1){
+                    result += ' OR '
+                }    
+            }
+        }
+
+        return result
+    }
+
     // Function to inject synonyms at run-time
     function processCustomQuery(query: string, dataProvider): void {
         // Remove complex query parts AND/OR/NOT/ANY/ALL/parenthasis/property queries/exclusions - can probably be improved            
@@ -168,11 +199,19 @@ module spcsr.Search.VariableInjection {
         // code which should modify the current query based on context for each new query
         if (ShowSynonyms) {
             if (queryParts) {
+                
                 for (var i = 0; i < queryParts.length; i++) {
-                    if (_synonymTable[queryParts[i]]) {
+                    var key = queryParts[i].toLowerCase()
+                    var value = _synonymTable[key] 
+
+                    if (value) {
                         // Replace the current query part in the query with all the synonyms
-                        query = query.replace(queryParts[i], String.format('({0} OR {1})', queryParts[i], _synonymTable[queryParts[i]].join(' OR ')));
-                        synonyms.push(_synonymTable[queryParts[i]]);
+                        query = query.replace(queryParts[i], 
+                            String.format('({0} OR {1})', 
+                            formatSynonym(queryParts[i]), 
+                            formatSynonymsSearchQuery(value)));
+
+                        synonyms.push(value);
                     }
                 }
             }
@@ -357,6 +396,10 @@ module spcsr.Search.VariableInjection {
 
     // Function that finds the synonyms and adds the required highlight tags
     function highlightSynonyms(prop: string, synVal: string): string {
+
+        if( !prop ){
+            return
+        }
         // Only highlight synonyms when required
         if (ShowSynonyms) {
             // Remove all <t0/> tags from the property value
